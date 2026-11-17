@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+/* رنگ‌های تم برای تیلویند ۴ (قبلاً در tailwind.config.ts بود) */
+@theme inline {
+  --color-bg: rgb(var(--bg));
+  --color-card: rgb(var(--card));
+  --color-bar: rgb(var(--card));
+  --color-tile: rgb(var(--tile));
+  --color-ink: rgb(var(--ink));
+  --color-silver: rgb(var(--silver));
+  --color-line: rgb(var(--line));
+  --color-accent: rgb(var(--accent));
+  --color-onaccent: rgb(var(--onaccent));
+  --color-brand: #087bff;
+  --color-ice: #f4f8ff;
+  --font-sans: var(--font-vazir), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root,
+[data-theme="dark"] {
+  --page: 3 6 12;
+  --bg: 6 12 27;
+  --card: 14 33 66;
+  --tile: 25 52 91;
+  --ink: 244 248 255;
+  --silver: 169 185 206;
+  --line: 255 255 255;
+  --accent: 0 207 255;
+  --onaccent: 6 12 27;
+  --nav: 11 23 48;
+  --s1: 27 58 107;
+  --s2: 15 35 71;
+  --hi: 0.12;
+  --sh: 0 6px 14px rgb(0 0 0 / 0.35);
+}
+[data-theme="light"] {
+  --page: 217 230 251;
+  --bg: 238 244 255;
+  --card: 255 255 255;
+  --tile: 226 236 255;
+  --ink: 11 27 58;
+  --silver: 90 109 140;
+  --line: 11 27 58;
+  --accent: 0 140 205;
+  --onaccent: 255 255 255;
+  --nav: 255 255 255;
+  --s1: 255 255 255;
+  --s2: 238 244 255;
+  --hi: 1;
+  --sh: 0 8px 18px rgb(8 123 255 / 0.14);
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  body {
+    background: rgb(var(--page));
+    color: rgb(var(--ink));
+    min-height: 100vh;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@layer components {
+  .app-bg {
+    background:
+      radial-gradient(
+        80% 35% at 100% 0%,
+        rgb(8 123 255 / 0.22),
+        transparent 70%
+      ),
+      radial-gradient(
+        70% 30% at 0% 100%,
+        rgb(0 207 255 / 0.1),
+        transparent 70%
+      ),
+      rgb(var(--bg));
+  }
+  /* کارت/تایل شیشه‌ای */
+  .surface {
+    background: linear-gradient(165deg, rgb(var(--s1)), rgb(var(--s2)));
+    border: 1px solid rgb(var(--line) / 0.08);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / var(--hi)),
+      var(--sh);
+  }
+  /* بنر خانه */
+  .banner {
+    background: radial-gradient(
+      120% 140% at 0% 0%,
+      #1d6bff 0%,
+      #0a3fb8 55%,
+      #07287a 100%
+    );
+    box-shadow:
+      0 12px 28px rgb(8 123 255 / 0.35),
+      inset 0 1px 0 rgb(255 255 255 / 0.2);
+  }
+  [data-theme="light"] .banner {
+    background: linear-gradient(135deg, #ffffff 0%, #dcebff 55%, #bbd8ff 100%);
+    box-shadow:
+      0 12px 28px rgb(8 123 255 / 0.2),
+      inset 0 1px 0 #fff;
+  }
+  .banner-btn {
+    background: #fff;
+    color: #087bff;
+    box-shadow: 0 4px 10px rgb(0 0 0 / 0.2);
+  }
+  [data-theme="light"] .banner-btn {
+    background: #087bff;
+    color: #fff;
+  }
+  /* نویگیشن شناور */
+  .navglass {
+    background: rgb(var(--nav) / 0.85);
+    border: 1px solid rgb(var(--line) / 0.1);
+    box-shadow: 0 14px 34px rgb(0 0 0 / 0.35);
+    backdrop-filter: blur(20px);
+  }
+  [data-theme="light"] .navglass {
+    box-shadow: 0 14px 34px rgb(8 123 255 / 0.18);
+  }
+  .mascot-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  .eye-blink {
+    animation: blink 5s infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .pop {
+    animation: pop 0.25s ease-out;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
