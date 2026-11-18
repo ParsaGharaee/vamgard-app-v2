@@ -12,7 +12,7 @@ const gpt = (t: number, r: number): [number, number] => {
 const SEGS = [["#ef4444", "E3"], ["#f59e0b", "D2"], ["#facc15", "C1"], ["#84cc16", "B1"], ["#22c55e", "A1"]] as const;
 const gradeIdx = (v: number) => Math.min(4, Math.floor(v * 5));
 
-export function CreditGauge({ score = 870, onBoost }: { score?: number; onBoost?: () => void }) {
+export function CreditGauge({ score = 870, onBoost, onComplete }: { score?: number; onBoost?: () => void; onComplete?: () => void }) {
   const [v, setV] = useState(0.5);
   const [phase, setPhase] = useState<"idle" | "run" | "done">("idle");
   const vr = useRef(0.5);
@@ -42,11 +42,10 @@ export function CreditGauge({ score = 870, onBoost }: { score?: number; onBoost?
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
   const start = () => {
-    if (phase !== "idle") return;
-    setPhase("run");
-    glide(0, 450, () => glide(score / 1000, 2200, () => setPhase("done")));
-  };
-
+  if (phase !== "idle") return;
+  setPhase("run");
+  glide(0, 450, () => glide(score / 1000, 2200, () => { setPhase("done"); onComplete?.(); }));
+};
   const g = gradeIdx(v);
   const tip = gpt(v, GR - 12);
   const idle = phase === "idle";

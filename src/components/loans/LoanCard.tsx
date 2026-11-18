@@ -4,6 +4,7 @@ import { BANKS } from "@/src/lib/constants/banks";
 import { Bank, Card } from "../ui";
 import type { Loan } from "./data";
 import { fa } from "@/src/lib/format";
+import Link from "next/link";
 
 type LoanCardProps = { loan: Loan; requested: boolean; onRequest: () => void };
 
@@ -24,9 +25,9 @@ export function LoanCard({ loan: l, requested: done, onRequest }: LoanCardProps)
       </div>
       <div className="mt-3 flex items-center justify-between text-xs"><span className="text-silver">احتمال تأیید برای شما</span><span className="font-bold text-accent">٪ {fa(l.ok)}</span></div>
       <div className="mt-1.5 h-2 rounded-full bg-tile"><div style={{ width: `${l.ok}%` }} className="h-full rounded-full bg-linear-to-l from-brand to-accent" /></div>
-      <button onClick={onRequest} className={`mt-4 w-full rounded-xl py-2.5 text-sm font-bold text-white ${done ? "bg-emerald-500" : "bg-brand"}`}>
-        {done ? "درخواست ثبت شد ✓" : "بررسی شرایط و درخواست"}
-      </button>
+      <Link href={`/loans/${l.id}`} className="mt-4 block w-full rounded-xl bg-brand py-2.5 text-center text-sm font-bold text-white">
+    بررسی شرایط و درخواست
+  </Link>
     </Card>
   );
 }

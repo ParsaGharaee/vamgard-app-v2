@@ -8,13 +8,14 @@ import { LoansScreen } from "../components/loans/LoansScreen";
 import { GroupScreen } from "../components/group/GroupScreen";
 import { ProfileScreen } from "../components/profile/ProfileScreen";
 import { VamyarFab } from "../components/vamyar/VamyarFab";
-import { VamyarSheet } from "../components/vamyar/VamyarSheet";
 import { BottomNav } from "../components/layout/BottomNav";
+import { useRouter } from "next/navigation";
 
 
 export default function Page() {
   const [tab, setTab] = useState<Tab>("home");
   const [chat, setChat] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="app-bg relative mx-auto flex h-screen max-w-[430px] flex-col overflow-hidden sm:shadow-[0_0_60px_rgba(8,123,255,.25)]">
@@ -27,11 +28,10 @@ export default function Page() {
         {tab === "profile" && <ProfileScreen go={setTab} />}
       </main>
 
-      {!chat && <VamyarFab onOpen={() => setChat(true)} />}
+      {!chat && <VamyarFab onOpen={() => router.push("/vamyar")} />}
 
       <BottomNav tab={tab} onChange={setTab} />
 
-      {chat && <VamyarSheet onClose={() => setChat(false)} />}
     </div>
   );
 }

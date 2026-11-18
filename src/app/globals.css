@@ -181,3 +181,26 @@
   0%, 18%   { transform: translateX(0); }
   82%, 100% { transform: translateX(var(--shift)); }
 }
+
+@keyframes aurora-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-30px,40px) scale(1.15); } }
+@keyframes aurora-b { 0%,100% { transform: translate(0,0) scale(1.1); } 50% { transform: translate(40px,-30px) scale(.95); } }
+@keyframes orb-ring { 0% { transform: scale(.7); opacity: .6; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes msg-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes dot-bounce { 0%,80%,100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-4px); opacity: 1; } }
+@keyframes caret { 50% { opacity: 0; } }
+
+.aurora-a { animation: aurora-a 12s ease-in-out infinite; }
+.aurora-b { animation: aurora-b 15s ease-in-out infinite; }
+.orb-ring { animation: orb-ring 3.3s ease-out infinite; }
+.msg-in { animation: msg-in .35s ease-out both; }
+.dot { animation: dot-bounce 1s ease-in-out infinite; }
+.caret { animation: caret 1s steps(1) infinite; }
+.text-ai-gradient {
+  background: linear-gradient(90deg, #087bff, #00cfff, #8b5cf6, #087bff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ai-shift 6s linear infinite;
+}
+@keyframes ai-shift { to { background-position: 200% center; } }
