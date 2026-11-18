@@ -50,6 +50,9 @@ export function ServicesScreen({ go }: ScreenProps) {
 
       {/* لیست تاپیک‌ها */}
       <div className="mt-2">
+        {filteredTopics.length === 0 && (
+          <p className="text-center text-sm text-silver mt-10">خدمتی با این جستجو پیدا نشد.</p>
+        )}
         {filteredTopics.map((topic, i) => (
           <div key={topic.title} className="mx-4 mt-6 scroll-mt-32" ref={(el) => { sectionRefs.current[topic.id] = el; }}>
             <h2 className="flex items-center gap-2 text-[15px] font-extrabold mb-3">

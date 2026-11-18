@@ -5,6 +5,10 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
+finnotech-openapi.json
+finnotech-ops.json
+finnotech-catalog-meta.json
 .DS_Store
 *.pem
 npm-debug.log*

@@ -1,5 +1,6 @@
 export { Stepper } from "./Stepper";
 export { VamInput } from "./VamInput";
+export { VamSelect } from "./VamSelect";
 export { VamButton } from "./VamButton";
 export { InfoRow } from "./InfoRow";
 export { DownloadBox } from "./DownloadBox";
