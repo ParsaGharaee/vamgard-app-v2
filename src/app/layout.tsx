@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fa" dir="rtl" data-theme="dark" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body className={`${vazir.variable} font-sans text-ink`}>{children}</body>
+      <body className={`${vazir.variable} font-sans text-ink w-full max-w-[430px] mx-auto sm:shadow-[0_0_60px_rgba(8,123,255,.25)]`}>{children}</body>
     </html>
   );
 }

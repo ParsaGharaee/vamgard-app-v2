@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { serviceFilters, serviceTopics } from "./data";
 import { ScreenProps } from "@/src/types/navigation";
 import { TitleBar } from "../layout/TitleBar";
-import { Ic } from "../ui";
+import { Ic, MarqueeText } from "../ui";
 
 export function ServicesScreen({ go }: ScreenProps) {
   const [search, setSearch] = useState("");
@@ -57,17 +57,19 @@ export function ServicesScreen({ go }: ScreenProps) {
               {topic.title}
             </h2>
 
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-2.5">
               {topic.services.map((srv) => (
                 <Link
                   key={srv.id}
                   href={srv.href}
-                  className="surface flex h-[95px] flex-col items-center justify-center gap-2 rounded-[22px] active:scale-95 transition-transform"
+                  className="surface group flex h-[88px] relative flex-col items-center justify-center gap-2 rounded-2xl px-2 active:scale-95 transition-transform"
                 >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl text-brand">
-                    <Ic n={srv.ic} size={28} className="invert-0 brightness-115" />
+                  <span className="grid h-10 w-10 place-items-center rounded-full transition-colors group-active:bg-brand/20">
+                    <Ic n={srv.ic} size={24} className="invert-0 brightness-115" />
                   </span>
-                  <span className="text-[11px] font-bold text-center px-1 leading-tight">{srv.t}</span>
+                  <div className="w-full overflow-hidden flex justify-center [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
+                    <MarqueeText className="text-[11px] font-bold">{srv.t}</MarqueeText>
+                  </div>
                 </Link>
               ))}
             </div>

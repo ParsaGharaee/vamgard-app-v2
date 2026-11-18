@@ -171,3 +171,13 @@
     transform: none;
   }
 }
+
+.svc-marquee {
+  animation-name: svc-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes svc-marquee {
+  0%, 18%   { transform: translateX(0); }
+  82%, 100% { transform: translateX(var(--shift)); }
+}
