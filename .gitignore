@@ -6,9 +6,12 @@
 .env.*
 !.env.example
 !.env.local.example
+!.env.local
+!.env.production
 finnotech-openapi.json
 finnotech-ops.json
 finnotech-catalog-meta.json
+tsconfig.tsbuildinfo
 .DS_Store
 *.pem
 npm-debug.log*
