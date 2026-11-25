@@ -52,8 +52,7 @@ async function proxy(req: NextRequest, pathSegments: string[]) {
     const ct = upstream.headers.get("content-type");
     if (ct) resHeaders.set("Content-Type", ct);
 
-    const setCookie = upstream.headers.get("set-cookie");
-    if (setCookie) resHeaders.set("Set-Cookie", setCookie);
+    // Never forward upstream Set-Cookie — keeps vamgard.org web sessions isolated from the app BFF.
 
     return new NextResponse(text || "{}", {
       status: upstream.status,
