@@ -1,84 +1,334 @@
+
 "use client";
-import { useRef, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Search } from "lucide-react";
+
 import { serviceFilters, serviceTopics } from "./data";
 import { ScreenProps } from "@/src/types/navigation";
 import { TitleBar } from "../layout/TitleBar";
-import { Ic, MarqueeText } from "../ui";
+import { MarqueeText } from "../ui";
+
+// مسیر آیکون دسته‌بندی‌ها
+function getTopicIcon(topicId: string): string {
+  const fileName = topicId === "همه" ? "all" : topicId;
+
+  return `/icons-new/topics/${fileName}.png`;
+}
+
+// اصلاح نام فایل‌هایی که با ID سرویس متفاوت هستند
+const SERVICE_ICON_ALIASES: Record<string, string> = {
+  "sayad-transfers-chain": "sayad-transfer-chain",
+};
+
+// مسیر آیکون تک‌تک سرویس‌ها
+function getServiceIcon(serviceId: string): string {
+  const fileName =
+    SERVICE_ICON_ALIASES[serviceId] ?? serviceId;
+
+  return `/icons-new/services/${fileName}.png`;
+}
+
+// کوتاه‌سازی نام دسته‌بندی‌ها
+function getOneWordLabel(label: string): string {
+  const clean = label.trim();
+
+  if (clean === "همه") return "همه";
+
+  if (
+    clean.includes("بانک") ||
+    clean.includes("کارت") ||
+    clean.includes("شبا")
+  ) return "بانکی";
+
+  if (
+    clean.includes("چک") ||
+    clean.includes("صیاد")
+  ) return "چک";
+
+  if (
+    clean.includes("خودرو") ||
+    clean.includes("پلاک") ||
+    clean.includes("خلافی")
+  ) return "خودرو";
+
+  if (
+    clean.includes("هویت") ||
+    clean.includes("احراز") ||
+    clean.includes("ملی")
+  ) return "هویتی";
+
+  if (
+    clean.includes("اعتبار") ||
+    clean.includes("تسهیلات") ||
+    clean.includes("وام")
+  ) return "اعتبار";
+
+  if (
+    clean.includes("قبض") ||
+    clean.includes("قبوض")
+  ) return "قبوض";
+
+  if (
+    clean.includes("پست") ||
+    clean.includes("آدرس")
+  ) return "پستی";
+
+  if (
+    clean.includes("شرکت") ||
+    clean.includes("حقوقی")
+  ) return "حقوقی";
+
+  const stripped = clean
+    .replace(
+      /^(سرویس‌های|سرویس های|سرویس|خدمات|استعلامات|استعلام|امور)\s+/g,
+      ""
+    )
+    .trim();
+
+  return stripped.split(/\s+/)[0] || clean;
+}
 
 export function ServicesScreen({ go }: ScreenProps) {
-  const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("همه");
-  const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  const filteredTopics = serviceTopics
-    .filter((topic) => activeFilter === "همه" || topic.id === activeFilter)
-    .map((topic) => ({ ...topic, services: topic.services.filter((s) => s.t.includes(search)) }))
-    .filter((topic) => topic.services.length > 0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const filterBarRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const scroller = rootRef.current?.closest("main");
+    const bar = filterBarRef.current;
+
+    if (!scroller || !bar) return;
+
+    let compact = false;
+    let rafId = 0;
+
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+
+      rafId = requestAnimationFrame(() => {
+        const y = scroller.scrollTop;
+
+        if (!compact && y > 44) {
+          compact = true;
+          bar.dataset.compact = "true";
+        } else if (compact && y < 14) {
+          compact = false;
+          bar.dataset.compact = "false";
+        }
+      });
+    };
+
+    scroller.addEventListener("scroll", onScroll, {
+      passive: true,
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+
+      scroller.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  // فیلتر دسته‌بندی‌ها
+  const filteredTopics = serviceTopics.filter(
+    (topic) =>
+      activeFilter === "همه" ||
+      topic.id === activeFilter
+  );
 
   return (
-    <div className="animate-in fade-in duration-300 pb-10">
+    <div
+      ref={rootRef}
+      className="animate-in fade-in duration-300 pb-10"
+    >
       <TitleBar title="خدمات" go={go} />
 
-      {/* سرچ و فیلتر چسبان */}
-      <div className="sticky top-0 z-30 bg-bg/90 backdrop-blur-md px-4 py-3 border-b border-line/5 shadow-sm mt-3">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="جستجوی خدمات..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full surface rounded-2xl py-3.5 pr-12 pl-4 text-sm outline-none placeholder:text-silver/70 focus:ring-2 focus:ring-brand/50 transition-shadow"
-          />
-          <Search size={22} className="absolute right-4 top-1/2 -translate-y-1/2 text-silver" />
-        </div>
-        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {serviceFilters.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => { setActiveFilter(f.id); setSearch(""); }}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-colors ${
-                activeFilter === f.id ? "bg-brand text-white shadow-md" : "surface text-silver"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      {/* نوار دسته‌بندی‌ها */}
+      <div
+        ref={filterBarRef}
+        data-compact="false"
+        className="group sticky top-0 z-20 h-[54px] overflow-visible"
+      >
+        <div className="border-b border-line/10 bg-bg/95 py-2 backdrop-blur-md">
+          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4">
+
+            {serviceFilters.map((f) => {
+              const active = activeFilter === f.id;
+              const shortLabel = getOneWordLabel(f.label);
+
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  className={`
+                    shrink-0
+                    flex
+                    w-[72px]
+                    h-[72px]
+                    flex-col
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    transition-[height,border-radius]
+                    duration-200
+                    ease-out
+                    group-data-[compact=true]:h-9
+                    group-data-[compact=true]:rounded-xl
+                    ${
+                      active
+                        ? "bg-brand text-white"
+                        : "surface text-ink"
+                    }
+                  `}
+                >
+                  {/* آیکون دسته‌بندی */}
+                  <div
+                    className="
+                      mb-1
+                      grid
+                      h-7
+                      w-7
+                      shrink-0
+                      place-items-center
+                      overflow-hidden
+                      transition-[height,margin,opacity,transform]
+                      duration-200
+                      ease-out
+                      group-data-[compact=true]:mb-0
+                      group-data-[compact=true]:h-0
+                      group-data-[compact=true]:scale-75
+                      group-data-[compact=true]:opacity-0
+                    "
+                  >
+                    <Image
+                      src={getTopicIcon(f.id)}
+                      alt={shortLabel}
+                      width={28}
+                      height={28}
+                      sizes="28px"
+                      className="h-7 w-7 object-contain"
+                    />
+                  </div>
+
+                  {/* عنوان دسته‌بندی */}
+                  <span className="w-full truncate px-1 text-center text-[11px] font-bold leading-4">
+                    {shortLabel}
+                  </span>
+                </button>
+              );
+            })}
+
+          </div>
         </div>
       </div>
 
-      {/* لیست تاپیک‌ها */}
-      <div className="mt-2">
-        {filteredTopics.length === 0 && (
-          <p className="text-center text-sm text-silver mt-10">خدمتی با این جستجو پیدا نشد.</p>
-        )}
+      {/* فضای جبرانی نوار دسته‌بندی */}
+      <div className="h-[36px]" />
+
+      {/* لیست دسته‌بندی‌ها و سرویس‌ها */}
+      <div className="mt-1">
+
         {filteredTopics.map((topic, i) => (
-          <div key={topic.title} className="mx-4 mt-6 scroll-mt-32" ref={(el) => { sectionRefs.current[topic.id] = el; }}>
-            <h2 className="flex items-center gap-2 text-[15px] font-extrabold mb-3">
-              <span className="h-3.5 w-1 rounded-full bg-brand" />
-              {topic.title}
+          <section
+            key={topic.id}
+            className="mx-4 mt-5 scroll-mt-20"
+          >
+            {/* عنوان دسته‌بندی */}
+            <h2 className="mb-4 flex items-center gap-2.5 text-[14px] font-extrabold">
+
+              <span className="h-4 w-1 shrink-0 rounded-full bg-brand" />
+
+              <span>{topic.title}</span>
+
+              <span className="mr-auto text-[10px] font-semibold text-silver">
+                {topic.services.length} سرویس
+              </span>
+
             </h2>
 
-            <div className="grid grid-cols-4 gap-2.5">
+            {/* کارت‌های سرویس */}
+            <div className="grid grid-cols-4 gap-3.5">
+
               {topic.services.map((srv) => (
                 <Link
                   key={srv.id}
                   href={srv.href}
-                  className="surface group flex h-[88px] relative flex-col items-center justify-center gap-2 rounded-2xl px-2 active:scale-95 transition-transform"
+                  className="
+                    surface
+                    group
+                    relative
+                    flex
+                    aspect-square
+                    min-w-0
+                    flex-col
+                    items-center
+                    justify-center
+                    gap-1.5
+                    rounded-[10px]
+                    px-1.5
+                    transition-all
+                    duration-200
+                    hover:border-brand/30
+                    active:scale-[0.96]
+                  "
                 >
-                  <span className="grid h-10 w-10 place-items-center rounded-full transition-colors group-active:bg-brand/20">
-                    <Ic n={srv.ic} size={24} className="invert-0 brightness-115" />
-                  </span>
-                  <div className="w-full overflow-hidden flex justify-center [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]">
-                    <MarqueeText className="text-[11px] font-bold">{srv.t}</MarqueeText>
+                  {/* آیکون اختصاصی سرویس */}
+                  <div
+                    className="
+                      relative
+                      grid
+                      h-10
+                      w-10
+                      shrink-0
+                      place-items-center
+                      transition-transform
+                      duration-200
+                      group-hover:-translate-y-0.5
+                    "
+                  >
+                    <Image
+                      src={getServiceIcon(srv.id)}
+                      alt={srv.t}
+                      width={40}
+                      height={40}
+                      sizes="40px"
+                      className="h-full w-full object-contain"
+                    />
                   </div>
+
+                  {/* عنوان سرویس */}
+                  <div
+                    className="
+                      flex
+                      w-full
+                      min-w-0
+                      justify-center
+                      overflow-hidden
+                      [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]
+                      [-webkit-mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]
+                    "
+                  >
+                    <MarqueeText className="text-center text-[10px] font-bold leading-5">
+                      {srv.t}
+                    </MarqueeText>
+                  </div>
+
                 </Link>
               ))}
+
             </div>
-            {i !== filteredTopics.length - 1 && <div className="h-px w-full bg-line/5 mt-6" />}
-          </div>
+
+            {/* جداکننده دسته‌بندی‌ها */}
+            {i !== filteredTopics.length - 1 && (
+              <div className="mt-7 h-px w-full bg-line/10" />
+            )}
+
+          </section>
         ))}
+
       </div>
     </div>
   );

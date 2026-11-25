@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 import "./globals.css";
@@ -6,20 +5,29 @@ import "./globals.css";
 const vazir = Vazirmatn({
   subsets: ["arabic", "latin"],
   variable: "--font-vazir",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "وام گرد",
+  title: "وام‌گرد",
   description: "خدمات مالی و وام",
 };
 
-const themeScript = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+const themeScript = `
+  try {
+    var theme = localStorage.getItem("theme");
+
+    if (theme === "light" || theme === "dark") {
+      document.documentElement.dataset.theme = theme;
+    }
+  } catch (error) {}
+`;
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html
       lang="fa"
@@ -31,10 +39,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
 
-      <body className={`${vazir.variable} font-sans text-ink min-h-screen`}>
-        <main className="w-full max-w-[430px] min-h-screen mx-auto sm:shadow-[0_0_60px_rgba(8,123,255,.25)] g">
+      <body
+        className={`${vazir.variable} font-sans min-h-screen bg-background text-ink`}
+      >
+        <div className="mx-auto min-h-screen w-full max-w-[430px] overflow-x-hidden sm:shadow-[0_0_60px_rgba(8,123,255,0.16)]">
           {children}
-        </main>
+        </div>
       </body>
     </html>
   );

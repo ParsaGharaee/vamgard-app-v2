@@ -52,7 +52,7 @@ export function BannerDeck({ go }: ScreenProps) {
   };
 
   return (
-    <div className="mt-4 overflow-x-clip py-6 -my-6">
+    <div className=" overflow-x-clip py-6 ">
       <div className="relative mx-4 grid">
         <div
           className="pointer-events-none col-start-1 row-start-1"

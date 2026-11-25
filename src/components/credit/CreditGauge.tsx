@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TrendingUp } from "lucide-react";
 import { Card } from "../ui";
 import { fa } from "@/src/lib/format";
+import { gradeFromScore, loadSession, useSessionListener } from "@/src/lib/session";
 
 const GCX = 110, GCY = 102, GR = 76;
 const gpt = (t: number, r: number): [number, number] => {
@@ -10,13 +12,72 @@ const gpt = (t: number, r: number): [number, number] => {
   return [GCX + r * Math.cos(a), GCY - r * Math.sin(a)];
 };
 const SEGS = [["#ef4444", "E3"], ["#f59e0b", "D2"], ["#facc15", "C1"], ["#84cc16", "B1"], ["#22c55e", "A1"]] as const;
-const gradeIdx = (v: number) => Math.min(4, Math.floor(v * 5));
 
-export function CreditGauge({ score = 870, onBoost, onComplete }: { score?: number; onBoost?: () => void; onComplete?: () => void }) {
-  const [v, setV] = useState(0.5);
-  const [phase, setPhase] = useState<"idle" | "run" | "done">("idle");
-  const vr = useRef(0.5);
+function gradeToIdx(grade?: string, ratio = 0.5): number {
+  const letter = (grade || "").trim().charAt(0).toUpperCase();
+  if (letter === "A") return 4;
+  if (letter === "B") return 3;
+  if (letter === "C") return 2;
+  if (letter === "D") return 1;
+  if (letter === "E") return 0;
+  return Math.min(4, Math.max(0, Math.floor(ratio * 5)));
+}
+
+type Props = {
+  /** Absolute score (default scale 0–900 like vamgard.org) */
+  score?: number;
+  scoreMax?: number;
+  /** ICS risk code from Finnotech (e.g. E3) — preferred over gradeFromScore */
+  grade?: string;
+  onBoost?: () => void;
+  onComplete?: () => void;
+  /** If set, CTA navigates here instead of animating locally */
+  href?: string;
+  /** Force filled state (e.g. after verification on a loan page) */
+  filled?: boolean;
+};
+
+export function CreditGauge({
+  score: scoreProp,
+  scoreMax = 900,
+  grade: gradeProp,
+  onBoost,
+  onComplete,
+  href = "/services/credit-assessment-report",
+  filled,
+}: Props) {
+  const router = useRouter();
+  const [sessionScore, setSessionScore] = useState<number | undefined>();
+  const [sessionGrade, setSessionGrade] = useState<string | undefined>();
+
+  useEffect(() => {
+    const sync = () => {
+      const s = loadSession();
+      setSessionScore(s.creditScore);
+      setSessionGrade(s.creditGrade);
+    };
+    sync();
+    return useSessionListener(sync);
+  }, []);
+
+  const resolvedScore = scoreProp ?? sessionScore;
+  const known = filled || typeof resolvedScore === "number";
+  const score = resolvedScore ?? 720;
+  const gradeLabel =
+    gradeProp || sessionGrade || (known ? gradeFromScore(Math.round(score)) : undefined);
+
+  const [v, setV] = useState(known ? score / scoreMax : 0.5);
+  const [phase, setPhase] = useState<"idle" | "run" | "done">(known ? "done" : "idle");
+  const vr = useRef(known ? score / scoreMax : 0.5);
   const raf = useRef(0);
+
+  useEffect(() => {
+    if (!known) return;
+    const t = Math.min(1, Math.max(0, score / scoreMax));
+    vr.current = t;
+    setV(t);
+    setPhase("done");
+  }, [known, score, scoreMax]);
 
   const glide = (to: number, ms: number, done?: () => void) => {
     cancelAnimationFrame(raf.current);
@@ -42,28 +103,52 @@ export function CreditGauge({ score = 870, onBoost, onComplete }: { score?: numb
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
   const start = () => {
-  if (phase !== "idle") return;
-  setPhase("run");
-  glide(0, 450, () => glide(score / 1000, 2200, () => { setPhase("done"); onComplete?.(); }));
-};
-  const g = gradeIdx(v);
+    if (href) {
+      router.push(href);
+      return;
+    }
+    if (phase !== "idle") return;
+    setPhase("run");
+    glide(0, 450, () =>
+      glide(score / scoreMax, 2200, () => {
+        setPhase("done");
+        onComplete?.();
+      }),
+    );
+  };
+
+  const g = gradeToIdx(known || phase === "done" ? gradeLabel : undefined, v);
   const tip = gpt(v, GR - 12);
   const idle = phase === "idle";
+  const label = known || phase === "done" ? gradeLabel || SEGS[g][1] : "—";
 
   return (
     <Card className="mx-4 p-4">
       <div className="flex items-center gap-3">
         <div className="flex-1 text-right">
-          <div className="text-[15px] font-extrabold">{phase === "done" ? "رتبه اعتباری شما" : "رتبه اعتباری خود را بسنج"}</div>
+          <div className="text-[15px] font-extrabold">
+            {phase === "done" || known ? "رتبه اعتباری شما" : "رتبه اعتباری خود را بسنج"}
+          </div>
           <p className="mt-1.5 text-xs leading-6 text-silver">
-            {phase === "done" ? "با انجام تسک‌ها، رتبه‌ات را بالا ببر و به وام‌های بهتری دسترسی داشته باش." : "با یک اعتبارسنجی سریع، وضعیت اعتبارت را ببین و وام مناسب پیدا کن."}
+            {phase === "done" || known
+              ? "با انجام تسک‌ها، رتبه‌ات را بالا ببر و به وام‌های بهتری دسترسی داشته باش."
+              : "با یک اعتبارسنجی بانکی سریع، وضعیت اعتبارت را ببین و وام مناسب پیدا کن."}
           </p>
-          {phase === "done" ? (
-            <button onClick={onBoost} className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-bold text-white">
+          {phase === "done" || known ? (
+            <button
+              type="button"
+              onClick={() => (onBoost ? onBoost() : router.push(href))}
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-bold text-white"
+            >
               <TrendingUp size={16} />افزایش اعتبار
             </button>
           ) : (
-            <button onClick={start} disabled={phase === "run"} className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-70">
+            <button
+              type="button"
+              onClick={start}
+              disabled={phase === "run"}
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-70"
+            >
               {phase === "run" ? "در حال بررسی…" : "اعتبارسنجی کن"}
             </button>
           )}
@@ -92,10 +177,10 @@ export function CreditGauge({ score = 870, onBoost, onComplete }: { score?: numb
             <circle cx={GCX} cy={GCY} r={3} fill="#fff" />
           </svg>
           <div className="-mt-1 text-4xl font-black leading-none" style={{ color: idle ? undefined : SEGS[g][0] }} dir="ltr">
-            {idle ? "—" : SEGS[g][1]}
+            {idle ? "—" : label}
           </div>
           <div className="mt-1 text-sm font-bold text-silver">
-            {idle ? "اعتبارسنجی نشده" : fa(Math.round(v * 1000))}
+            {idle ? "اعتبارسنجی نشده" : `${fa(Math.round(v * scoreMax))} / ${fa(scoreMax)}`}
           </div>
         </div>
       </div>

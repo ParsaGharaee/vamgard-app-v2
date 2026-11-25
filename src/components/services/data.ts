@@ -1,9 +1,7 @@
-import type { IconKey } from "@/src/lib/constants/icons";
-
 export interface ServiceItem {
   id: string;
   t: string;
-  ic: IconKey;
+  ic: string;
   href: string;
 }
 
@@ -15,106 +13,171 @@ export interface ServiceTopic {
 
 export const serviceFilters: { id: string; label: string }[] = [
   { id: "همه", label: "همه خدمات" },
-  { id: "credit", label: "تسهیلات و اعتبار" },
-  { id: "bills", label: "سرویس های قبض" },
-  { id: "banking", label: "بانکی و هویتی" },
+  { id: "information", label: "سرویس‌های احراز هویت" },
+  { id: "verification", label: "استعلام تسهیلات و اعتبارسنجی" },
+  { id: "bills", label: "سرویس‌های قبض" },
+  { id: "banking", label: "سرویس‌های استعلامی و تبدیلی" },
+  { id: "postal", label: "سرویس‌های پستی و کدپستی" },
   { id: "vehicle", label: "خودرو و موتور" },
+  { id: "cheque", label: "سرویس‌های چک صیادی" },
+  { id: "work", label: "سرویس‌های شناخت کسب‌وکار" },
 ];
 
 export const serviceTopics: ServiceTopic[] = [
-  // {
-  //   id: "credit",
-  //   title: "تسهیلات و اعتبارسنجی",
-  //   services: [
-  //     {
-  //       id: "credit-score",
-  //       t: "اعتبار معاملاتی",
-  //       ic: "shieldCheck",
-  //       href: "/services/credit-score",
-  //     },
-  //     {
-  //       id: "cheque-status",
-  //       t: "رنگ چک حقوقی",
-  //       ic: "search",
-  //       href: "/services/cheque-status",
-  //     },
-  //   ],
-  // },
+  // احراز هویت
   {
     id: "information",
-    title: "سرويس هاى احراز هويت",
+    title: "سرویس‌های احراز هویت",
     services: [
       {
         id: "card-owner-verification",
         t: "تطبیق کارت و کدملی",
-        ic: "shieldCheck",
+        ic: "sheildcheck",
         href: "/services/card-owner-verification",
       },
       {
         id: "live-video-kyc",
         t: "احراز هویت ویدئویی",
-        ic: "shieldCheck",
+        ic: "users",
         href: "/services/live-video-kyc",
       },
       {
         id: "video-national-card",
         t: "تطبیق ویدئو و کارت ملی",
-        ic: "shieldCheck",
+        ic: "letter",
         href: "/services/video-national-card",
       },
       {
         id: "death-status",
         t: "استعلام وضعیت حیات",
-        ic: "shieldCheck",
+        ic: "heart",
         href: "/services/death-status",
       },
       {
         id: "foreigner-id",
         t: "استعلام اتباع خارجی",
-        ic: "shieldCheck",
+        ic: "users",
         href: "/services/foreigner-id",
       },
       {
         id: "iban-owner-verification",
         t: "تطبیق شبا و کدملی",
-        ic: "shieldCheck",
+        ic: "bank",
         href: "/services/iban-owner-verification",
       },
       {
         id: "identification-inquiry",
         t: "اطلاعات هویتی",
-        ic: "shieldCheck",
+        ic: "folder",
         href: "/services/identification-inquiry",
+      },
+      {
+        id: "sana-inquiry",
+        t: "استعلام ثنا",
+        ic: "letter",
+        href: "/services/sana-inquiry",
+      },
+      {
+        id: "nid-inquiry",
+        t: "استعلام کد ملی",
+        ic: "search",
+        href: "/services/nid-inquiry",
+      },
+      {
+        id: "mobile-card-verification",
+        t: "تطبیق کارت و موبایل",
+        ic: "wallet2",
+        href: "/services/mobile-card-verification",
+      },
+      {
+        id: "shahkar-verify",
+        t: "تطبیق شاهکار",
+        ic: "sheildcheck",
+        href: "/services/shahkar-verify",
+      },
+      {
+        id: "national-card-ocr",
+        t: "اسکن کارت ملی (OCR)",
+        ic: "letter",
+        href: "/services/national-card-ocr",
+      },
+      {
+        id: "digital-sign-verify",
+        t: "تشخیص و تطبیق امضا",
+        ic: "sheildnote",
+        href: "/services/digital-sign-verify",
       },
     ],
   },
+
+  // تسهیلات و اعتبارسنجی
+  {
+    id: "verification",
+    title: "استعلام تسهیلات و اعتبارسنجی",
+    services: [
+      {
+        id: "back-cheques",
+        t: "استعلام چک برگشتی",
+        ic: "sheildnote",
+        href: "/services/back-cheques",
+      },
+      {
+        id: "back-cheques-legal",
+        t: "چک برگشتی حقوقی",
+        ic: "folder",
+        href: "/services/back-cheques-legal",
+      },
+      {
+        id: "credit-assessment",
+        t: "اعتبارسنجی بانکی",
+        ic: "chart2",
+        href: "/services/credit-assessment",
+      },
+      {
+        id: "guaranty-inquiry",
+        t: "استعلام ضمانت‌ها",
+        ic: "sheildcheck",
+        href: "/services/guaranty-inquiry",
+      },
+      {
+        id: "facility-inquiry",
+        t: "استعلام تسهیلات",
+        ic: "coins",
+        href: "/services/facility-inquiry",
+      },
+    ],
+  },
+
+  // قبوض
   {
     id: "bills",
-    title: "سرویس های قبض",
+    title: "سرویس‌های قبض",
     services: [
       {
         id: "bill-history",
         t: "استعلام تاریخچه قبض",
-        ic: "shieldNote",
+        ic: "calendar",
         href: "/services/bill-history",
       },
       {
         id: "bill-detail",
         t: "استعلام قبوض با جزئیات",
-        ic: "shieldNote",
+        ic: "letter",
         href: "/services/bill-detail",
       },
       {
         id: "bill-inquiry",
         t: "استعلام قبض",
-        ic: "wallet2",
+        ic: "wallet",
         href: "/services/bill-inquiry",
       },
     ],
   },
+
+  // خدمات بانکی
   {
     id: "banking",
-    title: "سرویس های استعلامی و تبدیلی",
+    title: "سرویس‌های استعلامی و تبدیلی",
     services: [
       {
         id: "card-inquiry",
@@ -131,7 +194,7 @@ export const serviceTopics: ServiceTopic[] = [
       {
         id: "card-to-iban",
         t: "کارت به شبا",
-        ic: "refresh",
+        ic: "bank",
         href: "/services/card-to-iban",
       },
       {
@@ -146,22 +209,30 @@ export const serviceTopics: ServiceTopic[] = [
         ic: "search",
         href: "/services/iban-inquiry",
       },
+      {
+        id: "national-card-image",
+        t: "تصویر کارت ملی",
+        ic: "letter",
+        href: "/services/national-card-image",
+      },
     ],
   },
+
+  // پست و کدپستی
   {
     id: "postal",
-    title: "سرویس های پستی و کدپستی",
+    title: "سرویس‌های پستی و کدپستی",
     services: [
       {
         id: "postal-code",
         t: "استعلام کد پستی",
-        ic: "search",
+        ic: "pin",
         href: "/services/postal-code",
       },
       {
         id: "postal-code-coordinates",
         t: "مختصات کد پستی",
-        ic: "search",
+        ic: "piechart",
         href: "/services/postal-code-coordinates",
       },
       {
@@ -172,14 +243,16 @@ export const serviceTopics: ServiceTopic[] = [
       },
     ],
   },
+
+  // خودرو و موتور
   {
     id: "vehicle",
-    title: "سرویس های خودرویی",
+    title: "سرویس‌های خودرویی",
     services: [
       {
         id: "negative-score",
         t: "نمره منفی",
-        ic: "car",
+        ic: "chart",
         href: "/services/negative-score",
       },
       {
@@ -191,43 +264,45 @@ export const serviceTopics: ServiceTopic[] = [
       {
         id: "freeway-toll",
         t: "عوارض آزادراهی",
-        ic: "car",
+        ic: "coins",
         href: "/services/freeway-toll",
       },
       {
         id: "license-check",
         t: "وضعیت گواهینامه",
-        ic: "shieldCar",
+        ic: "sheildcar",
         href: "/services/license-check",
       },
       {
         id: "third-party-insurance",
         t: "بیمه شخص ثالث",
-        ic: "shieldCar",
+        ic: "sheildcheck",
         href: "/services/third-party-insurance",
       },
       {
         id: "active-plates",
         t: "پلاک‌های فعال",
-        ic: "shieldCar",
+        ic: "car",
         href: "/services/active-plates",
       },
       {
         id: "plate-history",
         t: "تاریخچه پلاک",
-        ic: "shieldCar",
+        ic: "calendar",
         href: "/services/plate-history",
       },
     ],
   },
+
+  // چک صیادی
   {
     id: "cheque",
-    title: "سرویس های چک صیادی",
+    title: "سرویس‌های چک صیادی",
     services: [
       {
         id: "cleared-cheque",
         t: "چک رفع سوء اثر",
-        ic: "shieldCheck",
+        ic: "sheildcheck",
         href: "/services/cleared-cheque",
       },
       {
@@ -242,16 +317,36 @@ export const serviceTopics: ServiceTopic[] = [
         ic: "refresh",
         href: "/services/sayad-transfers-chain",
       },
+      {
+        id: "sayad-cheque-inquiry",
+        t: "استعلام چک صیاد",
+        ic: "sheildnote",
+        href: "/services/sayad-cheque-inquiry",
+      },
+      {
+        id: "sayad-accept-cheque",
+        t: "تایید و رد چک صیاد",
+        ic: "sheildcheck",
+        href: "/services/sayad-accept-cheque",
+      },
+      {
+        id: "sayad-cancel-cheque",
+        t: "لغو چک صیاد",
+        ic: "tag",
+        href: "/services/sayad-cancel-cheque",
+      },
     ],
   },
+
+  // شناخت کسب‌وکار
   {
     id: "work",
-    title: "سرويس هاى شناخت كسب وكار",
+    title: "سرویس‌های شناخت کسب‌وکار",
     services: [
       {
         id: "board-members",
         t: "اعضای هیئت مدیره",
-        ic: "folder",
+        ic: "users",
         href: "/services/board-members",
       },
       {
@@ -261,21 +356,15 @@ export const serviceTopics: ServiceTopic[] = [
         href: "/services/company-info",
       },
       {
-        id: "corporate-journal",
-        t: "استعلام آگهی‌های روزنامه رسمی شرکت",
-        ic: "folder",
-        href: "/services/corporate-journal",
-      },
-      {
         id: "enamad-inquiry",
         t: "استعلام اینماد",
-        ic: "shieldCheck",
+        ic: "sheildcheck",
         href: "/services/enamad-inquiry",
       },
       {
         id: "match-legal-id-members",
         t: "تطبیق اعضای شرکت",
-        ic: "shieldCheck",
+        ic: "users",
         href: "/services/match-legal-id-members",
       },
     ],

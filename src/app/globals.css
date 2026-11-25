@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* رنگ‌های تم برای تیلویند ۴ (قبلاً در tailwind.config.ts بود) */
 @theme inline {
   --color-bg: rgb(var(--bg));
   --color-card: rgb(var(--card));
@@ -28,16 +27,18 @@
   --accent: 0 207 255;
   --onaccent: 6 12 27;
   --nav: 11 23 48;
-  --s1: 27 58 107;
-  --s2: 15 35 71;
-  --hi: 0.12;
-  --sh: 0 6px 14px rgb(0 0 0 / 0.35);
+  --s1: 24 34 54;
+  --s2: 18 26 42;
+  --hi: 0.08;
+  /* سایه خیلی ملو و روشن در دارک‌مود */
+  --sh: 0 2px 8px rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.06);
 }
+
 [data-theme="light"] {
-  --page: 217 230 251;
-  --bg: 238 244 255;
+  --page: 232 238 248;
+  --bg: 244 247 252;
   --card: 255 255 255;
-  --tile: 226 236 255;
+  --tile: 235 241 250;
   --ink: 11 27 58;
   --silver: 90 109 140;
   --line: 11 27 58;
@@ -45,9 +46,10 @@
   --onaccent: 255 255 255;
   --nav: 255 255 255;
   --s1: 255 255 255;
-  --s2: 238 244 255;
-  --hi: 1;
-  --sh: 0 8px 18px rgb(8 123 255 / 0.14);
+  --s2: 255 255 255;
+  --hi: 0.9;
+  /* سایه خیلی ملو، ریز و خنثی (تیره) در لایت‌مود بدون رنگ آبی */
+  --sh: 0 2px 6px rgb(15 23 42 / 0.05), 0 1px 2px rgb(15 23 42 / 0.03);
 }
 
 @layer base {
@@ -70,28 +72,18 @@
 }
 
 @layer components {
+  /* حذف هاله‌ها و سایه‌های رندوم پس‌زمینه */
   .app-bg {
-    background:
-      radial-gradient(
-        80% 35% at 100% 0%,
-        rgb(8 123 255 / 0.22),
-        transparent 70%
-      ),
-      radial-gradient(
-        70% 30% at 0% 100%,
-        rgb(0 207 255 / 0.1),
-        transparent 70%
-      ),
-      rgb(var(--bg));
+    background: rgb(var(--bg));
   }
-  /* کارت/تایل شیشه‌ای */
+
+  /* کارت/تایل تمیز بدون سایه عجیب */
   .surface {
     background: linear-gradient(165deg, rgb(var(--s1)), rgb(var(--s2)));
-    border: 1px solid rgb(var(--line) / 0.08);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / var(--hi)),
-      var(--sh);
+    border: 1px solid rgb(var(--line) / 0.07);
+    box-shadow: var(--sh);
   }
+
   /* بنر خانه */
   .banner {
     background: radial-gradient(
@@ -100,35 +92,34 @@
       #0a3fb8 55%,
       #07287a 100%
     );
-    box-shadow:
-      0 12px 28px rgb(8 123 255 / 0.35),
-      inset 0 1px 0 rgb(255 255 255 / 0.2);
+    box-shadow: 0 4px 12px rgb(255 255 255 / 0.06);
   }
   [data-theme="light"] .banner {
-    background: linear-gradient(135deg, #ffffff 0%, #dcebff 55%, #bbd8ff 100%);
-    box-shadow:
-      0 12px 28px rgb(8 123 255 / 0.2),
-      inset 0 1px 0 #fff;
+    background: linear-gradient(135deg, #ffffff 0%, #eaf3ff 60%, #d8e9ff 100%);
+    border: 1px solid rgb(15 23 42 / 0.06);
+    box-shadow: 0 2px 8px rgb(15 23 42 / 0.05);
   }
+
   .banner-btn {
     background: #fff;
     color: #087bff;
-    box-shadow: 0 4px 10px rgb(0 0 0 / 0.2);
   }
   [data-theme="light"] .banner-btn {
     background: #087bff;
     color: #fff;
   }
+
   /* نویگیشن شناور */
   .navglass {
-    background: rgb(var(--nav) / 0.85);
-    border: 1px solid rgb(var(--line) / 0.1);
-    box-shadow: 0 14px 34px rgb(0 0 0 / 0.35);
+    background: rgb(var(--nav) / 0.9);
+    border: 1px solid rgb(var(--line) / 0.08);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.22);
     backdrop-filter: blur(20px);
   }
   [data-theme="light"] .navglass {
-    box-shadow: 0 14px 34px rgb(8 123 255 / 0.18);
+    box-shadow: 0 6px 20px rgb(15 23 42 / 0.08);
   }
+
   .mascot-float {
     animation: float 3s ease-in-out infinite;
   }
@@ -178,23 +169,90 @@
   animation-iteration-count: infinite;
 }
 @keyframes svc-marquee {
-  0%, 18%   { transform: translateX(0); }
-  82%, 100% { transform: translateX(var(--shift)); }
+  0%,
+  18% {
+    transform: translateX(0);
+  }
+  82%,
+  100% {
+    transform: translateX(var(--shift));
+  }
 }
 
-@keyframes aurora-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-30px,40px) scale(1.15); } }
-@keyframes aurora-b { 0%,100% { transform: translate(0,0) scale(1.1); } 50% { transform: translate(40px,-30px) scale(.95); } }
-@keyframes orb-ring { 0% { transform: scale(.7); opacity: .6; } 100% { transform: scale(1.7); opacity: 0; } }
-@keyframes msg-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes dot-bounce { 0%,80%,100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-4px); opacity: 1; } }
-@keyframes caret { 50% { opacity: 0; } }
+@keyframes aurora-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 40px) scale(1.15);
+  }
+}
+@keyframes aurora-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(0.95);
+  }
+}
+@keyframes orb-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
 
-.aurora-a { animation: aurora-a 12s ease-in-out infinite; }
-.aurora-b { animation: aurora-b 15s ease-in-out infinite; }
-.orb-ring { animation: orb-ring 3.3s ease-out infinite; }
-.msg-in { animation: msg-in .35s ease-out both; }
-.dot { animation: dot-bounce 1s ease-in-out infinite; }
-.caret { animation: caret 1s steps(1) infinite; }
+.aurora-a {
+  animation: aurora-a 12s ease-in-out infinite;
+}
+.aurora-b {
+  animation: aurora-b 15s ease-in-out infinite;
+}
+.orb-ring {
+  animation: orb-ring 3.3s ease-out infinite;
+}
+.msg-in {
+  animation: msg-in 0.35s ease-out both;
+}
+.dot {
+  animation: dot-bounce 1s ease-in-out infinite;
+}
+.caret {
+  animation: caret 1s steps(1) infinite;
+}
 .text-ai-gradient {
   background: linear-gradient(90deg, #087bff, #00cfff, #8b5cf6, #087bff);
   background-size: 200% auto;
@@ -203,4 +261,8 @@
   color: transparent;
   animation: ai-shift 6s linear infinite;
 }
-@keyframes ai-shift { to { background-position: 200% center; } }
+@keyframes ai-shift {
+  to {
+    background-position: 200% center;
+  }
+}
