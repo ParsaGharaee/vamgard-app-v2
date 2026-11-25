@@ -12,6 +12,8 @@ export type AppUser = {
   /** Credit score 0–900 when known */
   creditScore?: number;
   creditGrade?: string;
+  /** Server session token (X-App-Session) */
+  sessionToken?: string;
   loggedIn: boolean;
 };
 

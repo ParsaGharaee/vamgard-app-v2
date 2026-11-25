@@ -25,21 +25,19 @@ import { fa } from "@/src/lib/format";
 import { brandGradient } from "@/src/lib/styles";
 
 import {
+  clearSession,
+  gradeFromScore,
   loadSession,
   saveSession,
   useSessionListener,
 } from "@/src/lib/session";
 import Image from "next/image";
+import { MobileInput, isValidMobile } from "@/src/components/services/shared/inputs/MobileInput";
+import { OtpInput } from "@/src/components/services/shared/inputs/OtpInput";
+import { VamButton } from "@/src/components/services/shared";
+import { gatewayFetch } from "@/src/lib/gateway/client";
 
-const DEMO_USER: AppUser = {
-  loggedIn: true,
-  name: "علی رضایی",
-  city: "تهران",
-  job: "کارمند",
-  mobile: "09129496396",
-  creditScore: 720,
-  creditGrade: "A2",
-};
+type OtpPhase = "idle" | "sending" | "code" | "verifying";
 
 export function ProfileScreen({
   go,
@@ -49,7 +47,13 @@ export function ProfileScreen({
     loggedIn: false,
   });
 
-  // Sync Session
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [otpPhase, setOtpPhase] = useState<OtpPhase>("idle");
+  const [otpError, setOtpError] = useState<string>();
+  const [loginNote, setLoginNote] = useState<string>();
+
   useEffect(() => {
     const syncSession = () => {
       setUser(loadSession());
@@ -60,15 +64,14 @@ export function ProfileScreen({
     return useSessionListener(syncSession);
   }, []);
 
-  // User Information
-  const name =
+  const displayName =
     user.name ||
     (user.loggedIn ? "کاربر وام‌گرد" : "پروفایل شما");
 
   const city = user.city || "شهر ثبت نشده";
   const job = user.job || "شغل ثبت نشده";
 
-  const mobile = user.mobile
+  const mobileLabel = user.mobile
     ? fa(user.mobile)
     : "برای ادامه وارد شوید";
 
@@ -76,31 +79,85 @@ export function ProfileScreen({
     ? Math.round((user.creditScore / 900) * 100)
     : 68;
 
-  // Login
-  const handleLogin = () => {
-    saveSession(DEMO_USER);
-  };
-
-  // Logout
-  const handleLogout = () => {
-    saveSession({
-      loggedIn: false,
-    });
-  };
-
-  const handleAuth = () => {
-    if (user.loggedIn) {
-      handleLogout();
-    } else {
-      handleLogin();
+  const sendOtp = async () => {
+    if (!name.trim() || !isValidMobile(mobile)) {
+      setOtpError("نام و شماره موبایل معتبر را وارد کنید.");
+      return;
     }
+    setOtpError(undefined);
+    setLoginNote(undefined);
+    setOtpPhase("sending");
+    const res = await gatewayFetch("auth/send-otp", {
+      method: "POST",
+      json: { mobile, name: name.trim() },
+      noSession: true,
+    });
+    if (!res.ok) {
+      setOtpPhase("idle");
+      setOtpError(res.error || "ارسال کد ممکن نیست.");
+      return;
+    }
+    setOtpPhase("code");
+    setLoginNote("کد تأیید ارسال شد.");
+  };
+
+  const verifyOtp = async (code: string) => {
+    setOtpPhase("verifying");
+    setOtpError(undefined);
+    const res = await gatewayFetch<{
+      ok?: boolean;
+      sessionToken?: string;
+      token?: string;
+      user?: Partial<AppUser>;
+      score?: number;
+      ratingLabel?: string;
+    }>("auth/verify-otp", {
+      method: "POST",
+      json: { mobile, code, name: name.trim() },
+      noSession: true,
+    });
+
+    if (!res.ok) {
+      setOtpPhase("code");
+      setOtpError(res.error || "کد نامعتبر است.");
+      return;
+    }
+
+    const token = res.data.sessionToken || res.data.token;
+    const profile = res.data.user || {};
+    const next: AppUser = {
+      loggedIn: true,
+      name: profile.name || name.trim(),
+      mobile: profile.mobile || mobile,
+      city: profile.city,
+      job: profile.job,
+      nationalCode: profile.nationalCode,
+      sessionToken: typeof token === "string" ? token : undefined,
+      creditScore: profile.creditScore ?? res.data.score,
+      creditGrade: profile.creditGrade ?? res.data.ratingLabel,
+    };
+    if (next.creditScore && !next.creditGrade) {
+      next.creditGrade = gradeFromScore(next.creditScore);
+    }
+    saveSession(next);
+    setUser(next);
+    setLoginOpen(false);
+    setOtpPhase("idle");
+    setLoginNote(undefined);
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setUser({ loggedIn: false });
+    setLoginOpen(false);
+    setName("");
+    setMobile("");
   };
 
   return (
     <>
       <TitleBar title="پروفایل" go={go} />
 
-      {/* Profile Hero */}
       <div
         dir="ltr"
         className="
@@ -111,13 +168,11 @@ export function ProfileScreen({
           px-4 py-4 surface
         "
       >
-        {/* Avatar */}
         <ProfileAvatar
           active={active}
           className="shrink-0"
         />
 
-        {/* User Information */}
         <div
           dir="rtl"
           className="min-w-0 flex-1 text-right"
@@ -126,7 +181,7 @@ export function ProfileScreen({
             text-[15px] font-extrabold
             leading-7
           ">
-            {name}
+            {displayName}
 
             {user.loggedIn && (
               <span className="mr-1 text-sky-400">
@@ -156,13 +211,12 @@ export function ProfileScreen({
               {job}
             </span>
 
-            <span>{mobile}</span>
+            <span>{mobileLabel}</span>
           </div>
 
-          {/* Login / Logout */}
           <button
             type="button"
-            onClick={handleAuth}
+            onClick={() => (user.loggedIn ? handleLogout() : setLoginOpen((o) => !o))}
             className={`
               mt-3 rounded-full
               px-5 py-2
@@ -176,12 +230,39 @@ export function ProfileScreen({
               }
             `}
           >
-            {user.loggedIn ? "خروج از حساب" : "ورود"}
+            {user.loggedIn ? "خروج از حساب" : "ورود با موبایل"}
           </button>
         </div>
       </div>
 
-      {/* Financial Level */}
+      {loginOpen && !user.loggedIn && (
+        <Card className="mx-4 mt-3 space-y-3 p-4">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="نام و نام خانوادگی"
+            className="surface w-full rounded-xl px-3 py-2.5 text-sm outline-none"
+          />
+          <MobileInput value={mobile} onChange={setMobile} showErrors={otpPhase !== "idle"} />
+          {otpPhase === "code" || otpPhase === "verifying" ? (
+            <OtpInput
+              length={5}
+              onComplete={verifyOtp}
+              error={otpError}
+              loading={otpPhase === "verifying"}
+            />
+          ) : (
+            <VamButton loading={otpPhase === "sending"} onClick={sendOtp}>
+              ارسال کد تأیید
+            </VamButton>
+          )}
+          {loginNote && <p className="text-center text-[11px] text-brand">{loginNote}</p>}
+          {otpError && otpPhase !== "code" && (
+            <p className="text-center text-[11px] text-red-400">{otpError}</p>
+          )}
+        </Card>
+      )}
+
       <div
         className={`
           mx-4 mt-3 flex items-center
@@ -223,10 +304,9 @@ export function ProfileScreen({
         </div>
       </div>
 
-      {/* Credit Assessment */}
       <Section title="اعتبارسنجی" />
 
-      <CreditGauge href="/services/credit-assessment-report" />
+      <CreditGauge href="/profile/credit" />
 
       
 {/* Account Menu */}
@@ -246,7 +326,6 @@ export function ProfileScreen({
         ${soon ? "opacity-60" : "active:opacity-70"}
       `}
     >
-      {/* Icon */}
       <span className="
         relative grid h-12 w-12 shrink-0
         place-items-center
@@ -265,7 +344,6 @@ export function ProfileScreen({
         )}
       </span>
 
-      {/* Information */}
       <span className="min-w-0 flex-1 text-right">
         <span className="flex items-center gap-2 text-sm font-bold">
           {t}
@@ -278,7 +356,6 @@ export function ProfileScreen({
         </span>
       </span>
 
-      {/* Arrow */}
       <ChevronLeft
         size={18}
         className="shrink-0 text-silver/60"

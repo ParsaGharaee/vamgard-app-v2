@@ -1,6 +1,8 @@
 import { loans } from "@/src/components/loans/data";
 import { fa } from "@/src/lib/format";
 import type { IconKey } from "@/src/lib/constants/icons";
+import { gatewayFetch } from "@/src/lib/gateway/client";
+import { loadSession } from "@/src/lib/session";
 
 export type Msg = {
   id: number;
@@ -43,4 +45,40 @@ export function mockReply(q: string): { text: string; loanIds?: string[] } {
   return {
     text: "سوالت رو متوجه شدم. می‌تونم درباره‌ی وام، اقساط، اعتبارسنجی و برنامه‌ی مالی کمکت کنم. یه کم بیشتر توضیح بده تا دقیق‌تر جواب بدم.",
   };
+}
+
+function stableSessionId(): string {
+  if (typeof window === "undefined") return "server-placeholder-0000";
+  const key = "vamgard_vamyar_sid";
+  let sid = localStorage.getItem(key);
+  if (!sid || sid.length < 16) {
+    sid = `app-${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+    localStorage.setItem(key, sid);
+  }
+  return sid;
+}
+
+type LoanCard = { id?: number | string };
+
+/** Try live VamYar via gateway; fall back to local mock. */
+export async function replyForQuestion(q: string): Promise<{ text: string; loanIds?: string[]; fromGateway: boolean }> {
+  const session = loadSession();
+  const res = await gatewayFetch<{ message?: string; loanCards?: LoanCard[] }>("vamyar/chat", {
+    method: "POST",
+    json: {
+      message: q,
+      sessionId: session.sessionToken || stableSessionId(),
+      mobile: session.mobile,
+    },
+  });
+
+  if (res.ok && typeof res.data.message === "string" && res.data.message.trim()) {
+    const loanIds = res.data.loanCards
+      ?.map((c) => (c.id != null ? String(c.id) : ""))
+      .filter(Boolean);
+    return { text: res.data.message.trim(), loanIds, fromGateway: true };
+  }
+
+  const mock = mockReply(q);
+  return { ...mock, fromGateway: false };
 }

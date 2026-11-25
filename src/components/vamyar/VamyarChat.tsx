@@ -6,7 +6,7 @@ import { Ic } from "@/src/components/ui/Ic";
 import { Mascot } from "./Mascot";
 import { AuroraBackground } from "./AuroraBackground";
 import { ChatMessage, ThinkingRow } from "./ChatMessage";
-import { PROMPTS, mockReply, type Msg } from "./ai";
+import { PROMPTS, replyForQuestion, type Msg } from "./ai";
 
 export function VamyarChat() {
   const router = useRouter();
@@ -32,24 +32,25 @@ export function VamyarChat() {
     setText("");
     if (taRef.current) taRef.current.style.height = "auto";
     setPhase("thinking");
-    const r = mockReply(q);
 
-    const t1 = window.setTimeout(() => {
-      setMsgs((m) => [...m, { id: aid, me: false, text: "" }]);
-      setPhase("streaming");
-      let i = 0;
-      const iv = window.setInterval(() => {
-        i += 2;
-        setMsgs((m) => m.map((x) => (x.id === aid ? { ...x, text: r.text.slice(0, i) } : x)));
-        if (i >= r.text.length) {
-          clearInterval(iv);
-          setMsgs((m) => m.map((x) => (x.id === aid ? { ...x, text: r.text, loanIds: r.loanIds, done: true } : x)));
-          setPhase("idle");
-        }
-      }, 22);
-      timers.current.push(iv);
-    }, 1000);
-    timers.current.push(t1);
+    void replyForQuestion(q).then((r) => {
+      const t1 = window.setTimeout(() => {
+        setMsgs((m) => [...m, { id: aid, me: false, text: "" }]);
+        setPhase("streaming");
+        let i = 0;
+        const iv = window.setInterval(() => {
+          i += 2;
+          setMsgs((m) => m.map((x) => (x.id === aid ? { ...x, text: r.text.slice(0, i) } : x)));
+          if (i >= r.text.length) {
+            clearInterval(iv);
+            setMsgs((m) => m.map((x) => (x.id === aid ? { ...x, text: r.text, loanIds: r.loanIds, done: true } : x)));
+            setPhase("idle");
+          }
+        }, 22);
+        timers.current.push(iv);
+      }, r.fromGateway ? 400 : 1000);
+      timers.current.push(t1);
+    });
   };
 
   const stop = () => {

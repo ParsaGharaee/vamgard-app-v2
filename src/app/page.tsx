@@ -6,7 +6,7 @@ import { AppHeader } from "../components/layout/AppHeader";
 import { HomeScreen } from "../components/home/HomeScreen";
 import { ServicesScreen } from "../components/services/ServicesScreen";
 import { LoansScreen } from "../components/loans/LoansScreen";
-import { GroupScreen } from "../components/group/GroupScreen";
+// import { GroupScreen } from "../components/group/GroupScreen";
 import { ProfileScreen } from "../components/profile/ProfileScreen";
 import { VamyarFab } from "../components/vamyar/VamyarFab";
 import { BottomNav } from "../components/layout/BottomNav";
@@ -43,7 +43,7 @@ function AppShell() {
         {tab === "home" && <HomeScreen go={handleTabChange} />}
         {tab === "services" && <ServicesScreen go={handleTabChange} />}
         {tab === "loans" && <LoansScreen go={handleTabChange} />}
-        {tab === "group" && <GroupScreen go={handleTabChange} />}
+        {/* {tab === "group" && <GroupScreen go={handleTabChange} />} */}
         {tab === "profile" && <ProfileScreen go={handleTabChange} />}
       </main>
 

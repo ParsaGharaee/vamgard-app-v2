@@ -5,7 +5,7 @@ export function generateStaticParams() {
   const fromMenu = accountMenu
     .map((x) => x.href.replace(/^\/profile\//, ""))
     .filter((s) => s && !s.includes("/"));
-  const extra = ["info", "obligations", "history", "settings", "support", "personal", "financial"];
+  const extra = ["wallet", "credit", "history", "support", "personal"];
   return [...new Set([...fromMenu, ...extra])].map((section) => ({ section }));
 }
 
