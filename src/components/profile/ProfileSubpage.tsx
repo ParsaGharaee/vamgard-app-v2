@@ -216,7 +216,7 @@ export function ProfileSubpage({ section }: { section: string }) {
 
               <Link
                 href={selectedHistory.href}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-tile py-3 text-xs font-extrabold text-brand"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-tile py-3 text-xs font-extrabold text-white "
               >
                 <span>انجام مجدد این سرویس</span>
                 <ExternalLink size={14} />
