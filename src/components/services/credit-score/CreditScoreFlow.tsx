@@ -145,7 +145,7 @@ export default function CreditScoreFlow() {
             </p>
 
             <OtpInput
-              length={5}
+              length={4}
               onComplete={handleStep2}
               error={generalError}
               loading={loading}

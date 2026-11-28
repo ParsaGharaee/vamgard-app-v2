@@ -65,7 +65,7 @@ export function FieldRenderer({
   if (field.kind === "otp" && onOtpComplete) {
     return (
       <OtpInput
-        length={5}
+        length={4}
         onComplete={onOtpComplete}
         error={error}
         loading={otpLoading}

@@ -1,41 +1,44 @@
 "use client";
 
-import { Wallet } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Info, Wallet } from "lucide-react";
 import { fa } from "@/src/lib/format";
+import { loadWallet, useWalletListener } from "@/src/lib/walletStore";
 
 type Props = {
-  title: string;
   priceToman: number;
-  balanceToman?: number;
-  onPay?: () => void;
+  serviceTitle?: string;
 };
 
-export function ServicePriceBar({ title, priceToman, balanceToman, onPay }: Props) {
-  const enough = balanceToman == null || balanceToman >= priceToman;
+export function ServicePriceBar({ priceToman, serviceTitle }: Props) {
+  const [balance, setBalance] = useState<number>(0);
+
+  useEffect(() => {
+    setBalance(loadWallet().balance);
+    return useWalletListener(() => setBalance(loadWallet().balance));
+  }, []);
+
+  const enough = balance >= priceToman;
+
   return (
-    <div className="sticky bottom-0 z-30 border-t border-line/10 bg-card/95 px-4 py-3 backdrop-blur-md">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 text-right">
-          <div className="truncate text-xs text-silver">{title}</div>
-          <div className="text-lg font-extrabold text-ink">
-            {fa(priceToman.toLocaleString("en-US"))}
-            <span className="mr-1 text-xs font-bold text-silver">تومان</span>
-          </div>
-          {balanceToman != null && (
-            <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] text-silver">
-              <Wallet size={12} className="text-brand" />
-              موجودی: {fa(balanceToman.toLocaleString("en-US"))}
-            </div>
-          )}
+    <div className="mb-4 rounded-2xl border border-line/10 bg-tile/40 p-3.5 text-right">
+      <div className="flex items-start gap-2 text-[11px] leading-5 text-silver">
+        <Info size={15} className="mt-0.5 shrink-0 text-brand" />
+        <span>
+          هزینه {serviceTitle ? `درخواست «${serviceTitle}»` : "این درخواست"} در صورت کافی بودن موجودی کیف پول، به‌صورت مستقیم کسر و استعلام بلافاصله انجام می‌شود.
+        </span>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between border-t border-line/10 pt-2.5">
+        <div className="flex items-center gap-1.5 text-[11px] text-silver">
+          <Wallet size={14} className={enough ? "text-emerald-500" : "text-amber-500"} />
+          <span>موجودی: {fa(balance.toLocaleString("en-US"))} ت</span>
         </div>
-        <button
-          type="button"
-          onClick={onPay}
-          disabled={!onPay}
-          className="shrink-0 rounded-2xl bg-brand px-5 py-3 text-sm font-extrabold text-white shadow-[0_8px_20px_rgb(8_123_255_/_0.35)] disabled:opacity-60"
-        >
-          {enough ? "پرداخت" : "شارژ کیف پول"}
-        </button>
+
+        <div className="text-base font-black text-brand">
+          {fa(priceToman.toLocaleString("en-US"))}
+          <span className="mr-1 text-[11px] font-bold text-silver">تومان</span>
+        </div>
       </div>
     </div>
   );

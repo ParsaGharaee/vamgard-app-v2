@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, FileText, Lock } from "lucide-react";
 import { Bank } from "@/src/components/ui/Bank";
@@ -8,6 +8,7 @@ import { Section } from "@/src/components/ui/Section";
 import { InfoRow, ServiceHeader } from "@/src/components/services/shared";
 import { BANKS } from "@/src/lib/constants/banks";
 import { fa } from "@/src/lib/format";
+import { loadSession, useSessionListener } from "@/src/lib/session";
 import type { Loan } from "../data";
 import { CreditGateCard } from "./CreditGateCard";
 import { LoanFaq } from "./LoanFaq";
@@ -19,6 +20,15 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
   const [requested, setRequested] = useState(false);
   const gate = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const sync = () => {
+      const s = loadSession();
+      setVerified(Boolean(s.loggedIn && typeof s.creditScore === "number"));
+    };
+    sync();
+    return useSessionListener(sync);
+  }, []);
+
   const onCta = () => {
     if (!verified) gate.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     else setRequested(true);
@@ -29,7 +39,6 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
       <ServiceHeader title="جزئیات وام" />
 
       <main className="flex-1 overflow-y-auto pb-32 no-scrollbar">
-        {/* هیرو */}
         <Card className="mx-4 mt-4 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -48,20 +57,38 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
             <div><div className="text-[11px] text-silver">قسط ماهانه</div><div className="mt-1 text-sm font-extrabold">{fa(l.q)}</div></div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between text-xs"><span className="text-silver">احتمال تأیید برای شما</span><span className="font-bold text-accent">٪ {fa(l.ok)}</span></div>
-          <div className="mt-1.5 h-2 rounded-full bg-tile"><div style={{ width: `${l.ok}%` }} className="h-full rounded-full bg-linear-to-l from-brand to-accent" /></div>
-          {!verified && (
-            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-silver"><Lock size={12} />این عدد تخمینی است؛ بعد از اعتبارسنجی دقیق می‌شود.</p>
+          {/* نوار پیش‌بینی دریافت وام فقط پس از اعتبارسنجی نمایش داده می‌شود */}
+          {verified ? (
+            <>
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <span className="text-silver">احتمال تأیید برای شما</span>
+                <span className="font-bold text-accent">٪ {fa(l.ok)}</span>
+              </div>
+              <div className="mt-1.5 h-2 rounded-full bg-tile">
+                <div style={{ width: `${l.ok}%` }} className="h-full rounded-full bg-linear-to-l from-brand to-accent" />
+              </div>
+            </>
+          ) : (
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-brand/20 bg-brand/5 p-3 text-right">
+              <div className="flex items-center gap-2 text-[11px] leading-5 text-silver">
+                <Lock size={14} className="shrink-0 text-brand" />
+                <span>با انجام اعتبارسنجی بانکی، درصد شانس دریافت این وام برای شما محاسبه می‌شود.</span>
+              </div>
+              <Link
+                href="/profile/credit"
+                className="shrink-0 rounded-xl bg-brand px-3 py-1.5 text-[11px] font-extrabold text-white"
+              >
+                اعتبارسنجی
+              </Link>
+            </div>
           )}
         </Card>
 
-        {/* اعتبارسنجی */}
         <div ref={gate} className="scroll-mt-24">
           <Section title="مرحله اول: اعتبارسنجی" />
           <CreditGateCard bankName={BANKS[l.bank].n} verified={verified} onComplete={() => setVerified(true)} />
         </div>
 
-        {/* مراحل */}
         <Section title="مراحل دریافت وام" />
         <Card className="mx-4 p-4">
           {d.steps.map((s, i) => {
@@ -84,15 +111,11 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
           })}
         </Card>
 
-       
-
-        {/* شرایط */}
         <Section title="شرایط وام" />
         <Card className="mx-4 px-4">
           {d.conditions.map((c) => <InfoRow key={c.label} label={c.label} value={c.value} />)}
         </Card>
 
-        {/* بازپرداخت */}
         <Section title="محاسبه‌ی بازپرداخت" />
         <Card className="mx-4 px-4">
           <InfoRow label="قسط ماهانه" value={`${money(d.monthly)} تومان`} />
@@ -100,7 +123,6 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
           <InfoRow label="مجموع سود و کارمزد" value={`${money(d.interest)} تومان`} />
         </Card>
 
-        {/* مدارک */}
         <Section title="مدارک لازم" />
         <Card className="mx-4 space-y-3 p-4">
           {d.docs.map((doc) => (
@@ -110,15 +132,14 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
             </div>
           ))}
         </Card>
- {/* توضیحات */}
+
         <Section title="درباره‌ی این وام" />
         <Card className="mx-4 p-4"><p className="text-right text-sm leading-7 text-silver">{d.about}</p></Card>
-        {/* سوالات */}
+
         <Section title="سوالات متداول" />
         <LoanFaq items={d.faq} />
       </main>
 
-      {/* نوار پایین چسبان */}
       <div className="fixed max-w-[430px] mx-auto inset-x-0 bottom-0 z-30 border-t border-line/10 bg-bg/90 p-4 backdrop-blur-xl">
         <button
           onClick={onCta}
@@ -128,8 +149,8 @@ export function LoanDetailScreen({ loan: l }: { loan: Loan }) {
           {requested ? <><Check size={18} />درخواست ثبت شد</> : verified ? "ثبت درخواست وام" : <><Lock size={16} />ابتدا اعتبارسنجی کن</>}
         </button>
         {!verified && (
-          <Link href="/services/credit-score" className="mt-2 block text-center text-[11px] font-bold text-accent">
-            استعلام کامل اعتبار از صفحه‌ی خدمات
+          <Link href="services/credit-assessment" className="mt-2 block text-center text-[11px] font-bold text-accent">
+            انجام اعتبارسنجی بانکی
           </Link>
         )}
       </div>

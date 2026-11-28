@@ -1,10 +1,11 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ArrowLeft, ChevronLeft } from "lucide-react";
-
+import { useRouter } from "next/navigation";
+import { loadSession, useSessionListener, type AppUser } from "@/src/lib/session";
 import { BannerDeck } from "./BannerDeck";
 import { quickActions, suggestedLoans } from "./data";
 import { ScreenProps } from "@/src/types/navigation";
@@ -24,6 +25,17 @@ export function HomeScreen({ go }: ScreenProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const blueContentRef = useRef<HTMLDivElement | null>(null);
   const flatCapRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
+const [user, setUser] = useState<AppUser>({ loggedIn: false });
+
+useEffect(() => {
+  const sync = () => setUser(loadSession());
+  sync();
+  return useSessionListener(sync);
+}, []);
+
+const hasCreditScore = Boolean(user.loggedIn && typeof user.creditScore === "number");
+const financialLevel = hasCreditScore ? Math.round(((user.creditScore ?? 0) / 900) * 100) : null;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -113,36 +125,33 @@ export function HomeScreen({ go }: ScreenProps) {
 
       {/* بخش آبی بالایی */}
       <div className="sticky top-0 z-0 bg-brand px-4 pt-4 pb-11 text-white">
-        <div
-          ref={blueContentRef}
-          className="flex items-center justify-between will-change-[opacity]"
-        >
-          <div>
-            <div className="text-xs font-medium text-white/80">
-              سطح مالی من
-            </div>
-
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-2xl font-black">
-                {fa(68)}
-              </span>
-
-              <span className="text-xs text-white/80">
-                امتیاز وام
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => go("profile")}
-            className="flex items-center gap-1.5 rounded-full bg-black/20 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-sm transition active:scale-95"
-          >
-            <span>جزئیات امتیاز</span>
-            <ChevronLeft size={16} />
-          </button>
+  <div
+    ref={blueContentRef}
+    className="flex items-center justify-between gap-3 will-change-[opacity]"
+  >
+    <div>
+      <div className="text-xs font-medium text-white/80">سطح مالی من</div>
+      {financialLevel !== null ? (
+        <div className="mt-1 flex items-baseline gap-1.5">
+          <span className="text-2xl font-black">{fa(financialLevel)}</span>
+          <span className="text-xs text-white/80">از {fa(100)}</span>
         </div>
-      </div>
+      ) : (
+        <div className="mt-1 text-xs font-bold text-white/95">
+          با اعتبارسنجی بانکی فعال می‌شود
+        </div>
+      )}
+    </div>
 
+    <button
+    onClick={() => router.push(financialLevel !== null ? "/profile/credit" : "/services/credit-assessment")}
+      className="flex shrink-0 items-center gap-1.5 rounded-full bg-black/20 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-sm transition active:scale-95"
+    >
+      <span>{financialLevel !== null ? "جزئیات امتیاز" : "اعتبارسنجی کن"}</span>
+      <ChevronLeft size={16} />
+    </button>
+  </div>
+</div>
       {/* بدنه اصلی */}
       <div className="relative z-10 -mt-6 rounded-t-[28px] bg-bg pt-5">
 
@@ -158,7 +167,7 @@ export function HomeScreen({ go }: ScreenProps) {
           {quickActions.map(({ t, ic, badge, to }) => (
             <button
               key={t}
-              onClick={() => go(to)}
+              onClick={() => (String(to).startsWith("/") ? router.push(String(to)) : go(to))}
               className="surface relative flex aspect-square min-w-0 flex-col items-center justify-center gap-2 rounded-[10px] px-1.5 transition-all duration-200 active:scale-[0.96]"
             >
 

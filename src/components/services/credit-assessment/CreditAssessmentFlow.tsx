@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   FileSpreadsheet,
   ShieldAlert,
@@ -21,11 +22,22 @@ import {
   isValidNationalCode,
 } from "../shared/inputs/NationalCodeInput";
 import { MobileInput, isValidMobile } from "../shared/inputs/MobileInput";
+import { OtpInput } from "../shared/inputs/OtpInput";
+import { FillFromProfileButton } from "../shared/FillFromProfileButton";
+import { ServicePriceBar } from "@/src/components/pay/ServicePriceBar";
+import { ResultExport } from "@/src/components/pay/ResultExport";
+import { useServiceActionGate } from "@/src/components/pay/useServiceActionGate";
+import { CreditGauge } from "@/src/components/credit/CreditGauge";
 import { fa } from "@/src/lib/format";
+import { gradeFromScore, loadSession, saveSession } from "@/src/lib/session";
+import { addCreditHistory, addServiceHistory } from "@/src/lib/historyStore";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 type OutputType = "json" | "pdf";
 type AssessmentLevel = "base" | "standard" | "advance";
+
+const PRICE_TOMAN = 50_000;
+const VALID_CREDIT_OTP = "12345";
 
 interface CreditReportData {
   user?: {
@@ -65,8 +77,9 @@ interface AssessmentInquiryResponse {
 
 const STEPS = [
   { id: 1 as Step, label: "ثبت اطلاعات" },
-  { id: 2 as Step, label: "پردازش گزارش" },
-  { id: 3 as Step, label: "نتیجه نهایی" },
+  { id: 2 as Step, label: "کد تأیید" },
+  { id: 3 as Step, label: "پردازش" },
+  { id: 4 as Step, label: "نتیجه" },
 ];
 
 const STAGE_LABELS: Record<string, string> = {
@@ -100,25 +113,35 @@ const formatRial = (raw?: string | number) => {
 };
 
 export default function CreditAssessmentFlow() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
   const [generalError, setGeneralError] = useState("");
   const [showFormErrors, setShowFormErrors] = useState(false);
 
-  // ورودی‌های مرحله ۱
+  // مرحله ۱
   const [nationalCode, setNationalCode] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [outputType, setOutputType] = useState<OutputType>("json");
 
-  // وضعیت مرحله ۲ و ۳
+  // مرحله ۲ (OTP ۵ رقمی)
+  const [otpError, setOtpError] = useState("");
+  const [otpKey, setOtpKey] = useState(0);
+
+  // مرحله ۳ و ۴ (Polling و نتیجه)
   const [assessmentId, setAssessmentId] = useState("");
   const [inquiryData, setInquiryData] =
     useState<AssessmentInquiryResponse | null>(null);
   const [pollAttempt, setPollAttempt] = useState(0);
 
-  // مرحله ۱: ثبت درخواست گزارش اعتباری
-  const handleSubmitRequest = async () => {
+  const { runWithGate, GateSheets } = useServiceActionGate(
+    PRICE_TOMAN,
+    "اعتبارسنجی بانکی"
+  );
+
+  // مرحله ۱: اعتبارسنجی فرم ← گیت لاگین و پرداخت ← رفتن به OTP
+  const handleStep1Submit = () => {
     setGeneralError("");
     setShowFormErrors(true);
 
@@ -126,12 +149,29 @@ export default function CreditAssessmentFlow() {
       return;
     }
 
+    runWithGate(() => {
+      setShowFormErrors(false);
+      setOtpError("");
+      setStep(2);
+    });
+  };
+
+  // مرحله ۲: تأیید کد ۵ رقمی ← ثبت درخواست گزارش و رفتن به مرحله ۳ (پردازش)
+  const handleOtpComplete = async (code: string) => {
+    if (code.length < 5) return;
     setLoading(true);
+    setOtpError("");
+    await new Promise((r) => setTimeout(r, 600));
+
+    if (code !== VALID_CREDIT_OTP) {
+      setLoading(false);
+      setOtpError("کد تأیید ۵ رقمی اشتباه است. لطفاً دوباره وارد کنید.");
+      setOtpKey((k) => k + 1);
+      return;
+    }
+
     try {
       // POST /credit/v2/clients/{clientId}/assessmentSubmit/${outputType}
-      // Body: { nationalCode, mobileNumber }
-      await new Promise((r) => setTimeout(r, 1400));
-
       const mockSubmit = {
         responseCode: "FN-CTFH-20003800000",
         assessmentId: "8f3c1a2e-4b90-4d11-9c2a-1a2b3c4d5e6f",
@@ -146,8 +186,7 @@ export default function CreditAssessmentFlow() {
         progress: 15,
       });
       setPollAttempt(0);
-      setShowFormErrors(false);
-      setStep(2);
+      setStep(3);
     } catch {
       setGeneralError(
         "خطا در ثبت درخواست اعتبارسنجی. از انطباق شماره موبایل و کد ملی (شاهکار) اطمینان حاصل کنید."
@@ -157,15 +196,14 @@ export default function CreditAssessmentFlow() {
     }
   };
 
-  // مرحله ۲: استعلام وضعیت گزارش (Inquiry)
+  // مرحله ۳: استعلام وضعیت گزارش (Inquiry)
   const fetchAssessmentStatus = async (id: string, attempt: number) => {
     setPolling(true);
     setGeneralError("");
     try {
       // GET /credit/v2/clients/{clientId}/assessmentInquiry?assessmentId=${id}
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 1100));
 
-      // شبیه‌سازی پیشرفت مرحله‌ای تا آماده شدن گزارش
       let mockRes: AssessmentInquiryResponse;
       if (attempt === 0) {
         mockRes = {
@@ -177,6 +215,15 @@ export default function CreditAssessmentFlow() {
           progress: 65,
         };
       } else {
+        const session = loadSession();
+        const prevScore =
+          typeof session.creditScore === "number" ? session.creditScore : 720;
+        const score = Math.min(
+          870,
+          prevScore + (typeof session.creditScore === "number" ? 20 : 25)
+        );
+        const grade = gradeFromScore(score);
+
         mockRes =
           outputType === "pdf"
             ? {
@@ -197,12 +244,12 @@ export default function CreditAssessmentFlow() {
                 outputType: "json",
                 data: {
                   user: {
-                    fullName: "سپهر صبور",
+                    fullName: session.name || "کاربر وام‌گرد",
                     nationalCode,
                   },
                   creditScore: {
-                    score: 745,
-                    riskGrade: "A2",
+                    score,
+                    riskGrade: grade,
                     description: "رتبه اعتباری بسیار خوب (ریسک پایین)",
                   },
                   positiveSignalList: [
@@ -222,13 +269,46 @@ export default function CreditAssessmentFlow() {
                   guaranteePastExpiredTotalAmount: "0",
                 },
               };
+
+        // ذخیره دائمی امتیاز و تاریخچه در پروفایل
+        saveSession({
+          ...session,
+          loggedIn: true,
+          nationalCode: session.nationalCode || nationalCode,
+          creditScore: score,
+          creditGrade: grade,
+        });
+
+        addCreditHistory({
+          score,
+          grade,
+          riskLabel: score >= 680 ? "بسیار کم‌ریسک" : "کم‌ریسک",
+          facilitiesCount: 1,
+          bouncedCheques: 0,
+        });
+
+        addServiceHistory({
+          serviceId: "credit-assessment",
+          title: "اعتبارسنجی بانکی",
+          href: "/services/credit-assessment",
+          amountToman: PRICE_TOMAN,
+          summary: `رتبه ${grade} · امتیاز ${fa(score)}`,
+          rows: [
+            { label: "کد ملی", value: fa(nationalCode) },
+            { label: "شماره موبایل", value: fa(mobileNumber) },
+            { label: "امتیاز اعتباری", value: `${fa(score)} از ۹۰۰` },
+            { label: "رتبه اعتباری", value: grade },
+          ],
+        });
       }
 
       setInquiryData(mockRes);
       if (mockRes.status === "DONE") {
-        setStep(3);
+        setStep(4);
       } else if (mockRes.status === "FAILED") {
-        setGeneralError("تهیه گزارش اعتباری با خطا مواجه شد. لطفاً مجدداً تلاش کنید.");
+        setGeneralError(
+          "تهیه گزارش اعتباری با خطا مواجه شد. لطفاً مجدداً تلاش کنید."
+        );
       }
     } catch {
       setGeneralError("خطا در دریافت وضعیت گزارش اعتباری.");
@@ -237,14 +317,14 @@ export default function CreditAssessmentFlow() {
     }
   };
 
-  // Polling خودکار در مرحله ۲ هر ۳ ثانیه تا آماده شدن گزارش
+  // Polling خودکار در مرحله ۳
   useEffect(() => {
-    if (step !== 2 || !assessmentId) return;
+    if (step !== 3 || !assessmentId) return;
     const timer = setTimeout(() => {
       const nextAttempt = pollAttempt + 1;
       setPollAttempt(nextAttempt);
       fetchAssessmentStatus(assessmentId, pollAttempt);
-    }, 2500);
+    }, 2200);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -273,27 +353,30 @@ export default function CreditAssessmentFlow() {
     setPollAttempt(0);
     setShowFormErrors(false);
     setGeneralError("");
+    setOtpError("");
   };
+
+  const progressWidth =
+    step === 1
+      ? "0%"
+      : step === 2
+        ? "calc(33.33% - 16px)"
+        : step === 3
+          ? "calc(66.66% - 32px)"
+          : "calc(100% - 48px)";
 
   return (
     <div className="bg-bg min-h-screen text-ink pb-10">
       <ServiceHeader title="اعتبارسنجی بانکی" />
 
       <div className="px-4 mt-5">
-        {/* استپر ۳ مرحله‌ای */}
+        {/* استپر ۴ مرحله‌ای */}
         <div className="surface rounded-2xl p-4 mb-6 border border-line/5">
           <div className="flex items-center justify-between relative">
             <div className="absolute right-6 left-6 top-4 h-0.5 bg-line/15 -z-0" />
             <div
               className="absolute right-6 top-4 h-0.5 bg-brand transition-all duration-500 -z-0"
-              style={{
-                width:
-                  step === 1
-                    ? "0%"
-                    : step === 2
-                      ? "calc(50% - 24px)"
-                      : "calc(100% - 48px)",
-              }}
+              style={{ width: progressWidth }}
             />
 
             {STEPS.map((s) => {
@@ -317,7 +400,7 @@ export default function CreditAssessmentFlow() {
                     {isCompleted ? <Check size={15} /> : fa(s.id)}
                   </div>
                   <span
-                    className={`text-[11px] font-extrabold ${
+                    className={`text-[10px] font-extrabold ${
                       isActive
                         ? "text-brand"
                         : isCompleted
@@ -343,9 +426,16 @@ export default function CreditAssessmentFlow() {
         {/* مرحله ۱: ورود کد ملی، موبایل و نوع خروجی */}
         {step === 1 && (
           <div className="animate-in slide-in-from-right-4 fade-in duration-300">
-            <p className="text-xs text-silver leading-6 mb-5 text-right px-1">
+            <p className="text-xs text-silver leading-6 mb-4 text-right px-1">
               کد ملی و شماره موبایل متعلق به خود شخص را وارد کنید تا گزارش اعتبارسنجی بانکی با بالاترین سطح مجاز تهیه شود.
             </p>
+
+            <FillFromProfileButton
+              onFill={(u) => {
+                if (u.nationalCode) setNationalCode(u.nationalCode);
+                if (u.mobile) setMobileNumber(u.mobile);
+              }}
+            />
 
             <NationalCodeInput
               value={nationalCode}
@@ -392,21 +482,65 @@ export default function CreditAssessmentFlow() {
               </div>
             </div>
 
-            <div className="surface rounded-2xl p-3.5 mb-6 border border-line/5 flex items-start gap-2.5 text-[11px] text-silver leading-5">
+            <div className="surface rounded-2xl p-3.5 mb-4 border border-line/5 flex items-start gap-2.5 text-[11px] text-silver leading-5">
               <Info size={16} className="text-brand shrink-0 mt-0.5" />
               <span>
                 پیش از ثبت درخواست، انطباق کد ملی و شماره موبایل (شاهکار) بررسی می‌شود.
               </span>
             </div>
 
-            <VamButton loading={loading} onClick={handleSubmitRequest}>
-              شروع اعتبارسنجی
+            <ServicePriceBar
+              priceToman={PRICE_TOMAN}
+              serviceTitle="اعتبارسنجی بانکی"
+            />
+
+            <VamButton loading={loading} onClick={handleStep1Submit}>
+              ادامه و دریافت کد تأیید
             </VamButton>
           </div>
         )}
 
-        {/* مرحله ۲: در حال آماده‌سازی گزارش (IN_PROGRESS) */}
+        {/* مرحله ۲: ورود کد تأیید ۵ رقمی */}
         {step === 2 && (
+          <div className="surface rounded-[28px] border border-line/10 p-5 space-y-4 animate-in fade-in">
+            <div className="rounded-2xl border border-brand/20 bg-brand/5 p-3.5 text-center">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-extrabold text-brand">
+                <ShieldCheck size={16} />
+                <span>کد تأیید ۵ رقمی به {fa(mobileNumber)} ارسال شد</span>
+              </div>
+              <p className="mt-1 text-[11px] text-silver">
+                کد تست اعتبارسنجی:{" "}
+                <span className="font-black text-ink">{fa(VALID_CREDIT_OTP)}</span>
+              </p>
+            </div>
+
+            <OtpInput
+              key={otpKey}
+              length={5}
+              onComplete={handleOtpComplete}
+              loading={loading}
+              error={otpError || undefined}
+            />
+
+            {otpError && (
+              <div className="flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400">
+                <ShieldAlert size={15} />
+                <span>{otpError}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="w-full py-1.5 text-center text-xs font-bold text-silver hover:text-brand"
+            >
+              بازگشت و ویرایش اطلاعات
+            </button>
+          </div>
+        )}
+
+        {/* مرحله ۳: در حال آماده‌سازی گزارش (IN_PROGRESS) */}
+        {step === 3 && (
           <div className="animate-in zoom-in-95 fade-in duration-400 space-y-4">
             <div className="surface p-5 rounded-[28px] border border-line/5 shadow-lg shadow-brand/5">
               <div className="flex items-center justify-between mb-4">
@@ -468,10 +602,9 @@ export default function CreditAssessmentFlow() {
           </div>
         )}
 
-        {/* مرحله ۳: نتیجه نهایی گزارش (DONE) */}
-        {step === 3 && inquiryData && (
+        {/* مرحله ۴: نتیجه نهایی گزارش (DONE) */}
+        {step === 4 && inquiryData && (
           <div className="animate-in zoom-in-95 fade-in duration-500 space-y-4">
-            {/* خروجی PDF */}
             {inquiryData.outputType === "pdf" ? (
               <div className="surface p-5 rounded-[28px] border border-line/5 shadow-lg shadow-brand/5">
                 <div className="flex items-center justify-between mb-4">
@@ -512,8 +645,18 @@ export default function CreditAssessmentFlow() {
                 <InfoRow label="کد ملی" value={fa(nationalCode)} />
               </div>
             ) : (
-              /* خروجی JSON */
               <>
+                {/* کیلومترشمار سینک‌شده با امتیاز واقعی */}
+                {inquiryData.data?.creditScore?.score !== undefined && (
+                  <div className="-mx-4">
+                    <CreditGauge
+                      filled
+                      score={inquiryData.data.creditScore.score}
+                      grade={inquiryData.data.creditScore.riskGrade}
+                    />
+                  </div>
+                )}
+
                 <div className="surface p-5 rounded-[28px] border border-line/5 shadow-lg shadow-brand/5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-[15px] font-extrabold">
@@ -527,31 +670,6 @@ export default function CreditAssessmentFlow() {
                     )}
                   </div>
 
-                  {inquiryData.data?.creditScore && (
-                    <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/15 p-5 text-center mb-4">
-                      <div className="text-[11px] font-bold text-silver">
-                        امتیاز و رتبه اعتباری
-                      </div>
-                      <div className="flex items-center justify-center gap-3 mt-1.5">
-                        {inquiryData.data.creditScore.score !== undefined && (
-                          <span className="text-3xl font-black text-emerald-500">
-                            {fa(inquiryData.data.creditScore.score)}
-                          </span>
-                        )}
-                        {inquiryData.data.creditScore.riskGrade && (
-                          <span className="rounded-xl bg-emerald-500/15 px-3 py-1 text-sm font-black text-emerald-600 font-mono">
-                            {inquiryData.data.creditScore.riskGrade}
-                          </span>
-                        )}
-                      </div>
-                      {inquiryData.data.creditScore.description && (
-                        <div className="text-xs font-bold text-ink mt-2">
-                          {inquiryData.data.creditScore.description}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {inquiryData.data?.user?.fullName && (
                     <InfoRow
                       label="نام و نام خانوادگی"
@@ -559,6 +677,7 @@ export default function CreditAssessmentFlow() {
                     />
                   )}
                   <InfoRow label="کد ملی" value={fa(nationalCode)} />
+                  <InfoRow label="شماره موبایل" value={fa(mobileNumber)} />
                 </div>
 
                 {/* خلاصه تسهیلات */}
@@ -574,9 +693,7 @@ export default function CreditAssessmentFlow() {
                     />
                     <InfoRow
                       label="مانده بدهی کل"
-                      value={formatRial(
-                        inquiryData.data.facilityDebtTotalAmount
-                      )}
+                      value={formatRial(inquiryData.data.facilityDebtTotalAmount)}
                     />
                     <InfoRow
                       label="مانده سررسید گذشته"
@@ -599,7 +716,7 @@ export default function CreditAssessmentFlow() {
                   </div>
                 )}
 
-                {/* خلاصه ضمانت‌ها (سطح پیشرفته) */}
+                {/* خلاصه ضمانت‌ها */}
                 {inquiryData.data?.guaranteeTotalAmount !== undefined && (
                   <div className="surface p-5 rounded-[28px] border border-line/5 shadow-sm">
                     <div className="flex items-center gap-2 text-[15px] font-extrabold mb-3">
@@ -650,8 +767,29 @@ export default function CreditAssessmentFlow() {
                     ))}
                   </div>
                 )}
+
+                <ResultExport
+                  title="گزارش اعتبارسنجی بانکی"
+                  fileName={`credit-report-${nationalCode}`}
+                  rows={[
+                    { label: "کد ملی", value: fa(nationalCode) },
+                    { label: "شماره موبایل", value: fa(mobileNumber) },
+                    {
+                      label: "امتیاز اعتباری",
+                      value: `${fa(inquiryData.data?.creditScore?.score ?? 0)} از ۹۰۰`,
+                    },
+                    {
+                      label: "رتبه اعتباری",
+                      value: inquiryData.data?.creditScore?.riskGrade || "—",
+                    },
+                  ]}
+                />
               </>
             )}
+
+            <VamButton onClick={() => router.push("/profile/credit")}>
+              مشاهده در پروفایل اعتباری و نمودار پیشرفت
+            </VamButton>
 
             <button
               onClick={resetForm}
@@ -662,6 +800,8 @@ export default function CreditAssessmentFlow() {
           </div>
         )}
       </div>
+
+      {GateSheets}
     </div>
   );
 }
